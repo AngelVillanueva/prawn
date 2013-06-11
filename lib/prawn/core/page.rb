@@ -126,12 +126,28 @@ module Prawn
 
       def finalize
         if dictionary.data[:Contents].is_a?(Array)
+          # "flatten" streams in Contents
+          new_contents = []
           dictionary.data[:Contents].each do |stream|
-            stream.stream.compress! if document.compression_enabled?
-          end
+            if stream.stream
+              new_contents << stream
+            else
+              stream.data.each do |sub|
+                new_contents << sub 
+              end 
+            end 
+          end 
+
+          dictionary.data[:Contents] = new_contents
+
+          dictionary.data[:Contents].each do |stream|
+            stream.compress_stream if document.compression_enabled?
+            stream.data[:Length] = stream.stream.size
+          end 
         else
-          content.stream.compress! if document.compression_enabled?
-        end
+          content.compress_stream if document.compression_enabled?
+          content.data[:Length] = content.stream.size
+        end 
       end
 
       def imported_page?
